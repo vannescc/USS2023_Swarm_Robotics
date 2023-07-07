@@ -221,13 +221,18 @@ def p_controller(ideal_speed, speed_setting, measured_speed):
     return (speed_setting + ((ideal_speed - measured_speed) *.5))
     
 def pi_controller(ideal_speed, measured_speed, cumulative_error, time_since_last):
-    if(ideal_speed < 0):
-        measured_speed = - measured_speed
-    Kp = 0.5
-    Ki = 1
-    error = ideal_speed - measured_speed
-    i_error_now = (cumulative_error + error) * time_since_last
-    return [(ideal_speed + error * Kp + i_error_now * Ki), i_error_now]
+    if(True):#ideal_speed != 0):
+        if(ideal_speed < 0):
+            measured_speed = - measured_speed
+        Kp = 0.5
+        Ki = 1
+        error = ideal_speed - measured_speed
+        i_error_now = (cumulative_error + error) * time_since_last
+        return [(ideal_speed + error * Kp + i_error_now * Ki), i_error_now]
+    else:
+        error = ideal_speed - measured_speed
+        i_error_now = (cumulative_error + error) * time_since_last
+        return [ideal_speed, i_error_now]
     
 def rotate(angle, LUTS):
     dist = float(angle/360*math.pi*WIDTH)
@@ -429,7 +434,7 @@ def main():
             right_prev_state = right_state
             right_state = right_encoder.get()
             
-            if(left_speed != None and right_speed != None):
+            if(left_speed != None and right_speed != None and left_ideal_speed != None and right_ideal_speed != None and left_ideal_speed != 0):
                 left_pi_speed, left_i_error = pi_controller(left_ideal_speed, left_speed, left_i_error, left_tPrev - left_tNow)
                 right_pi_speed, right_i_error = pi_controller(right_ideal_speed, right_speed, right_i_error, right_tPrev - right_tNow)
                 print([left_pi_speed, right_pi_speed])
@@ -643,6 +648,7 @@ def main():
                                     continue
                         """
             elif testMode == 4:
+                update_motors(0, 0, LUTS)
                 #print("collecting")
                 if(Reading == False):
                     Reading = True
