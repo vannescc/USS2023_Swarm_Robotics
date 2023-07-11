@@ -14,11 +14,9 @@ import csv
 from select import select
 import signal
 
-#"172.24.52.22"# "172.25.255.118"  #"192.168.8.1"#"172.25.249.107"#"10.33.50.33"#"0.0.0.0"#"127.0.0.1"
 UDP_IP = "172.24.87.204"#"172.25.255.118"#"192.168.7.2"
-# UDP_IP = "172.24.52.22"
-UDP_PORT = 5005#8080
-UDP_IP_OVERLORD = "172.24.87.109"#"172.24.53.136"
+UDP_PORT = 5005
+UDP_IP_OVERLORD = "172.24.87.109"
 UDP_PORT_OVERLORD = 8080
 socksender = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
@@ -28,13 +26,14 @@ socksender.setblocking(0)
 sockreceiver = socket.socket(socket.AF_INET,
                              socket.SOCK_DGRAM)
 sockreceiver.bind((UDP_IP_OVERLORD, UDP_PORT_OVERLORD))
-sockreceiver.setblocking(0)
+sockreceiver.setblocking(0) #allows us to write this program as non-blocking
 
 global botHeight
 botHeight = 17.3 #cm
 global cameraHeight
 cameraHeight = 112 #cm
 
+#this has since been depricated and is not used in later programs, instead we use the pnp transformation from the opencv2 library
 #roughly 194 pixels/50 cm with current setup on 5/23/2023 = 3.88 #200/50 = 4
 global pix_cm
 pix_cm = 4 #subject to small fluxuations
@@ -45,6 +44,7 @@ class TimeOutException(Exception):
 def alarm_handler(signum, frame):
     print("Alarm signal Received")
     raise TimeOutException()
+
 
 def send_signal_stop(bot_id):
     print(str(0) + "," + str(0) + "," + str(bot_id), flush=True)
@@ -83,14 +83,17 @@ def calc_offset(x_bot, y_bot, x_tar, y_tar, x_c1, y_c1, x_c2, y_c2):
     #    offset = -1 * (180 + offset)
     return offset * -1
 
+#calculates the clope of a line defined by two points
 def calc_slope(x1, y1, x2, y2):
     #if (x2 - x1 == 0):
     #    return ((float(y1) - float(y1)) / 0.1)
     return ((float(y1) - float(y2)) / (float(x2) - float(x1)))
 
+#calculates the straight line distance between two points
 def calc_dist(target, bot):
     return abs(sqrt(float((pow((target[0] - bot[0]), 2) + pow((target[1] - bot[1]), 2)))))
 
+#prints data to an image overlay on what the camera can see
 def mark_debug(frame, x_b, y_b, angles, x_p, y_p, x_n, y_n, ax_p, ay_p, R, c_x, c_y, m_x, m_y, f_x, f_y, c_x_f, c_y_f, R_f, intersections, point_f, x_b_par, y_b_par):
     out = frame
     dimensions = out.shape
@@ -132,6 +135,7 @@ def mark_debug(frame, x_b, y_b, angles, x_p, y_p, x_n, y_n, ax_p, ay_p, R, c_x, 
 #         cv2.line(out, (int(x_n), int(y_n)), (int(c_x), int(c_y)), (0, 0, 255), 1)
         
     cv2.imshow("DEBUG", out)
+    
 #always assumes 2 "bots" one of which is actally a robot
 def calc_mes_pos_ang(centers, angles, AoA, dist):
     ret = [None] * 3
@@ -142,6 +146,7 @@ def calc_mes_pos_ang(centers, angles, AoA, dist):
             ret[2] = float(degrees(atan2((centers[1][0] - ret[0]), (centers[1][1] - ret[1]))))
     return ret
 
+#sends the robot two speeds in cm/s corresponding to their respective wheels and a time to apply these speeds
 def send_to_bot(s_l, s_r, T):
     Message = ""
     Message = Message + str(1) + ", " + str(s_l) + ", " + str(s_r) + ", " + str(T)
@@ -154,7 +159,8 @@ def send_to_bot(s_l, s_r, T):
             sent = True
         except Exception as e:
             continue
-    
+
+#sends the robot an angle to turn, and then a speed to travel straight at after it has finished turning, and a time to travel straight
 def send_to_bot_s(ang, speed, T):
     Message = ""
     Message = Message + str(2) + ", " + str(ang) + ", " + str(speed) + ", " + str(T)
@@ -167,7 +173,8 @@ def send_to_bot_s(ang, speed, T):
             sent = True
         except Exception as e:
             continue
-    
+
+#tells the robot to stop it's current opperation and to wait for further instruction
 def send_to_bot_abort():
     Message = ""
     Message = Message + str(-1) + ", " + str(-1) + ", " + str(-1) + ", " + str(-1)
@@ -180,7 +187,8 @@ def send_to_bot_abort():
             sent = True
         except Exception as e:
             continue
-    
+
+#tells the robot to stop running
 def send_to_bot_stop():
     Message = ""   
     Message = Message + str(0) + ", " + str(0) + ", " + str(0) + ", " + str(0)
@@ -193,7 +201,8 @@ def send_to_bot_stop():
             sent = True
         except Exception as e:
             continue
-    
+
+#sends the robot a string
 def send_mess_to_bot(message):
     data = bytes(message, 'utf-8')
 #     sock.sendto(data, (UDP_IP, UDP_PORT))
@@ -205,6 +214,7 @@ def send_mess_to_bot(message):
         except Exception as e:
             continue
 
+#generates a random distance from the given point at the given angle that will remain within the border
 def rand_dist_in_border_at_angle(x_b, y_b, angle, border): #chat GPT helped with this function
     x_p = x_b + sin(radians(angle))*40
     y_p = y_b + cos(radians(angle))*40
@@ -260,27 +270,33 @@ def rand_dist_in_border_at_angle(x_b, y_b, angle, border): #chat GPT helped with
     else:
         return random.randrange(int(maxDist))
 
+#calculates how the robot would have to move to reach the center of the border and then tells the robot to move there
 def move_to_mid(x_b, y_b, angle, height, width):
     theta = float(degrees(atan2((width/2 - x_b), (height/2 - y_b))))
     ang = theta - angle
     dist = calc_dist((x_b, y_b), (width/2, height/2))/pix_cm
     send_to_bot_s(ang, 13, dist/13)
-    
+
+#returns true if the point is within the border and false if it isn't
 def within_border(x_b, y_b, border):
     return not (x_b >= border[1][0] or x_b <= border[0][0] or y_b <= border[0][1] or y_b >= border[1][1])
-        
+
+#returns a random point within the border
 def rand_point_in_border(border):
     x = random.randrange(border[0][0], border[1][0], 1)
     y = random.randrange(border[0][1], border[1][1], 1)
     #print (x,y)
     return (x,y)
 
+#calculates the angle to turn from point 1 to point point 2
 def calc_ang_between(p1, p2): #fixed it, something about this coordinate system messes with trig functions
     return float(degrees(atan2((p2[0] - p1[0]), (p2[1] - p1[1]))))
 #     return float(degrees(atan2((p2[0] - p1[0]), (p2[1] - p1[1]))))
+#returns the angle between the two points in radians
 def calc_ang_between_radians(p1, p2): #fixed it, something about this coordinate system messes with trig functions
     return float(atan2((p2[0] - p1[0]), (p2[1] - p1[1])))
 
+#normalizes the given angle between 180 and -180
 #takes degrees and returns degrees
 def norm_angle(angle):
     while(angle < -180):
@@ -288,12 +304,8 @@ def norm_angle(angle):
     while (angle > 180):
         angle = angle - 360
     return angle
-# def mark_debug_angle(frame, centers, results, nBots):
-#     out = frame
-#     for i in range(nBots):
-#         endpoint = (int(centers[i][0] + degrees(sin(tags.get_bot_angles(results, nBots)[i]))*100), int(centers[i][1] + degrees(cos(tags.get_bot_angles(results, nBots)[i]))*100))
-#         cv2.line(out, (int(centers[i][0]), int(centers[i][1])), endpoint, (0, 0, 255), 1)
 
+#normalizes the angle in radians between 2pi and 0
 #takes radians and returns radians
 def norm_angle_radians(angle):
     while(angle < 0):
@@ -301,6 +313,7 @@ def norm_angle_radians(angle):
     while (angle > 2*pi):
         angle = angle - 2*pi
     return angle
+
 #this function takes 2 points on a circle, the first is the start point this point also has an associated angle in degrees, and the second is the target point.
 #this function also takes the radius and center of the circle and a rectangular boundry to remain within
 #this function returns a 0 if there is no path along the circle that connects the two points withput being interupted by the boundry
@@ -371,6 +384,7 @@ def possible_circle_connections(start_point, start_angle, end_point, circle_cent
         else:
             return 0
 
+#returns a list of points where the circle intersects the boundry
 def circ_intersections(circle_center, circle_radius, boundry):
     c_x, c_y = circle_center
     r = circle_radius
@@ -402,7 +416,8 @@ def circ_intersections(circle_center, circle_radius, boundry):
                 intersections.append([c_x - dx, y])
     print(intersections)
     return intersections
-    
+
+#shows the circle and points on the image of the camera feed
 def circ_debug(frame, center, R, points):
     out = frame
     dimensions = out.shape
