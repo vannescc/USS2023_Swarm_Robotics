@@ -1,3 +1,4 @@
+#This program takes a data set and calculates k1 and k2 that can be used get a distance from the integer values returned from the IR sensor
 import random
 from statistics import mean as mu
 from mpl_toolkits import mplot3d
