@@ -164,7 +164,8 @@ def convert_speed_to_duty(servo, speed, LUTS): #could be better
             Duty = HigherDuty
         print(Duty)
     return Duty
-    
+
+#returns the look up tables used to control the speed of the two wheels, These look up tables contain 3 columns in the format "duty cycle, pulse width in micro-seconds, speed in cm/s"
 def getLUTS():
     leftFile = open('LeftServoResponseNew.csv', 'r')
     leftReader = csv.reader(leftFile)
@@ -214,12 +215,13 @@ def update_motors(left_new_speed, right_new_speed, LUTS):
         right_motor_setting = -1.5
     leftServo.set(left_motor_setting)
     rightServo.set(right_motor_setting)
-    
+
 def p_controller(ideal_speed, speed_setting, measured_speed):
     if(ideal_speed < 0):
         measured_speed = -measured_speed
     return (speed_setting + ((ideal_speed - measured_speed) *.5))
     
+#impliments a proportional–integral controller. returns the corrected speed and integral error
 def pi_controller(ideal_speed, measured_speed, cumulative_error, time_since_last):
     if(True):#ideal_speed != 0):
         if(ideal_speed < 0):
@@ -233,7 +235,8 @@ def pi_controller(ideal_speed, measured_speed, cumulative_error, time_since_last
         error = ideal_speed - measured_speed
         i_error_now = (cumulative_error + error) * time_since_last
         return [ideal_speed, i_error_now]
-    
+
+#takes angle in degrees and returns the speed for each wheel to rotate and the time for which the wheels should spin to complete the desired rotaion
 def rotate(angle, LUTS):
     dist = float(angle/360*math.pi*WIDTH)
     T = abs(float(dist/13))
@@ -245,7 +248,8 @@ def rotate(angle, LUTS):
         right_rot_speed = 13
     return [time.time() + T,  left_rot_speed, right_rot_speed]
     
-def readData(origData): #takes the byte string from udp communication assuming a byte string of one int and three float values separated by commas and returns these values as a list of one int and three floats
+#takes the byte string from udp communication assuming a byte string of one int and three float values separated by commas and returns these values as a list of one int and three floats
+def readData(origData):
     message = origData.decode('utf-8').split(", ")
     retMessage = []*len(message)
     print(message)
@@ -400,6 +404,7 @@ def main():
     IR_reading_index = 0
     #IR_FILE = "IR_readings"
     
+    #highest level control loop
     while not Done:
         """
         data = [None]
@@ -408,6 +413,7 @@ def main():
             Message = readData(data)
             print("received message: %s" % Message)#floatMessage)
         """
+        #this impliments the pi controller, there are some errors when the pi controller is on when the robot is not moving
         if(p_control_on):
             if(left_speed_measuring == True):
                 if(left_prev_state == 1 and left_state == 0):
@@ -434,6 +440,7 @@ def main():
             right_prev_state = right_state
             right_state = right_encoder.get()
             
+            #this actually changes the input speed to the update function. we need to check to make sure we don't pass erronious values to the update_motors function
             if(left_speed != None and right_speed != None and left_ideal_speed != None and right_ideal_speed != None and left_ideal_speed != 0):
                 left_pi_speed, left_i_error = pi_controller(left_ideal_speed, left_speed, left_i_error, left_tPrev - left_tNow)
                 right_pi_speed, right_i_error = pi_controller(right_ideal_speed, right_speed, right_i_error, right_tPrev - right_tNow)
@@ -452,12 +459,12 @@ def main():
                 print("updating")
                 """
             
-        
+        #make sure not to overload the terminal
         if(time.time() >= reportTime):
             #print([left_speed, right_speed])
             reportTime = time.time() + UPDATETIMESTEP
         
-        
+        #retain data while executing an instruction from the overlord
         if(not Moving and not Reading and not Sending):
             data = None
             addr = None
@@ -503,7 +510,7 @@ def main():
                 Moving = False
             elif testMode == 2: #do things to move straight
                 Moving = True
-                if(tStopRot == None):
+                if(tStopRot == None): #turn
                     tStopRot, left_rot_speed, right_rot_speed = rotate(Message[1], LUTS)
                     left_ideal_speed = left_rot_speed
                     left_p_speed = left_ideal_speed
@@ -511,7 +518,7 @@ def main():
                     right_p_speed = right_ideal_speed
                     update_motors(left_rot_speed, right_rot_speed, LUTS)
                 elif(time.time() >= tStopRot):
-                    if(tStop == None):
+                    if(tStop == None):  #move straight
                         left_rot_speed = None
                         right_rot_speed = None
                         left_speed_measuring = False
@@ -526,7 +533,7 @@ def main():
                         right_p_speed = right_ideal_speed
                         update_motors(Message[2], Message[2], LUTS)
                         tStop = time.time() + Message[3]
-                    elif(time.time() >= tStop):
+                    elif(time.time() >= tStop): #stop moving
                         Moving = False
                         tStopRot = None
                         tStop = None
@@ -539,7 +546,7 @@ def main():
                         update_motors(0, 0, LUTS)
                         waiting_for_acc = True
                         sending = True
-                        while sending:
+                        while sending: #tell the overlord that the robot finished moving
                             try:
                                 print("sending")
                                 socksender.sendall(DoneMovingMessage)
@@ -568,7 +575,7 @@ def main():
                         right_p_speed = right_ideal_speed
             elif testMode == 3: #do things to move straight and then turn
                 Moving = True
-                if(tStopRot == None):
+                if(tStopRot == None): #turn
                     tStopRot, left_rot_speed, right_rot_speed = rotate(Message[1], LUTS)
                     left_ideal_speed = left_rot_speed
                     left_p_speed = left_ideal_speed
@@ -576,7 +583,7 @@ def main():
                     right_p_speed = right_ideal_speed
                     update_motors(left_rot_speed, right_rot_speed, LUTS)
                 elif(time.time() >= tStopRot):
-                    if(tStop == None):
+                    if(tStop == None): #move straight
                         left_rot_speed = None
                         right_rot_speed = None
                         left_speed_measuring = False
@@ -592,7 +599,7 @@ def main():
                         update_motors(Message[2], Message[2], LUTS)
                         tStop = time.time() + Message[3]
                     elif(time.time() >= tStop):
-                        if(tStopRot2 == None):
+                        if(tStopRot2 == None): #turn again
                             right_rot_speed = None
                             left_speed_measuring = False
                             left_speed = None
@@ -606,7 +613,7 @@ def main():
                             right_ideal_speed = right_rot_speed
                             right_p_speed = right_ideal_speed
                             update_motors(left_rot_speed, right_rot_speed, LUTS)
-                        elif(time.time() >= tStopRot2):
+                        elif(time.time() >= tStopRot2): #stop moving
                             Moving = False
                             tStopRot = None
                             tStopRot2 = None
@@ -620,7 +627,7 @@ def main():
                             update_motors(0, 0, LUTS)
                             waiting_for_acc = True
                             sending_loc = True
-                            while sending_loc:
+                            while sending_loc: #tell the overlord that the robot finished moving
                                 try:
                                     print("sending")
                                     socksender.sendall(DoneMovingMessage)
@@ -647,7 +654,7 @@ def main():
                                     garbageVarIHatePython = 1
                                     continue
                         """
-            elif testMode == 4:
+            elif testMode == 4: #collect IR data
                 update_motors(0, 0, LUTS)
                 #print("collecting")
                 if(Reading == False):
@@ -674,7 +681,7 @@ def main():
                                     garbageVarIHatePython = 1
                                     continue
                             Reading = False
-            elif testMode == 5:
+            elif testMode == 5: #send IR data to overlord
                 print("Sending")
                 #print(len(IR_readings))
                 Sending = True
