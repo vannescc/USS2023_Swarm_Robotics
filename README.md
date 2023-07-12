@@ -1,6 +1,9 @@
 # USS2023_Swarm_Robotics
 This project aimed to develop an routine for a robot to automatically charactorize it's own movement
-
+## Overlord
+the Overlord is responsible for all computation and 
+## Robot
+The robot receives instructions from the Overlord and 
 ## Running the Project
 ### Connecting to the BBBlue
 I connect to the BeagleBone Blue in 3 ways:
