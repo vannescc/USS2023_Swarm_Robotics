@@ -1,9 +1,9 @@
 # USS2023_Swarm_Robotics
 This project aimed to develop an routine for a robot to automatically charactorize it's own movement
 ## Overlord
-the Overlord is responsible for all computation and 
+The Overlord is responsible for locating the robot in relation to the boundry box, communicating with the robot, and all computation. 
 ## Robot
-The robot receives instructions from the Overlord and 
+The robot receives instructions from the Overlord and can collect data from the IR sensor mounted on the front of the robot
 ## Running the Project
 ### Connecting to the BBBlue
 I connect to the BeagleBone Blue in 3 ways:
@@ -20,3 +20,8 @@ In the terminal type "ifconfig" to obtain a list of all IPs the BBBlue has with 
 
 
 
+This file contains the contents of the /home/pi/Swarm_Robots_USS2023/apriltag-master/python folder
+The Overlord is responsible for locating the robot in relation to the boundry box, communicating with the robot, and all computation
+The Overlord can tell the robot how fast and how for how long to drive straight, and can tell it to turn an angle
+It can also instruct the robot to drive along a circle, but this function is not currently functional
+There are several verisons of several of the programs, the python file with the largest version number is the most recent
