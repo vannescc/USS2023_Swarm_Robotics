@@ -19,6 +19,7 @@ In the terminal type "ifconfig" to obtain a list of all IPs the BBBlue has with 
 ## IR Distance Sensor SHARP 0A41SK [(Datasheet)](https://www.pololu.com/file/0J713/GP2Y0A41SK0F.pdf)
 I use the rcpy.adc library to read data from the IR sensor. This library returns an integer representation of the voltage passed by the IR sensor. This sensor must be calibrated before obtaining a distance reading from the IR sensor, I calibrated my sensor using an implimentation of [these instructions](https://aleksandarhaber.com/noise-reduction-and-calibration-of-distance-sensors-sharp-infrared-sensors/). Below is a graph of the estimation of the IR charectorization using least squares method.
 ![IR Integer Reading vs Distance](https://github.com/vannescc/USS2023_Swarm_Robotics/assets/120139813/560c7c6b-457c-45af-a7fb-a5165d806c5f)
+
 the function to estimate distance based on the integer reading from the IR sensor is given by:
 
 ![image](https://github.com/vannescc/USS2023_Swarm_Robotics/assets/120139813/96ad3f36-62e1-458a-a11f-1682bac367e0)
