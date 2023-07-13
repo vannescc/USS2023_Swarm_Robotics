@@ -17,11 +17,4 @@ In the terminal type "ifconfig" to obtain a list of all IPs the BBBlue has with 
 ### BBBlue pinout
 ![image](https://github.com/vannescc/USS2023_Swarm_Robotics/assets/120139813/50d27df0-8a13-4871-9a1d-82a0015406ed)
 ## IR Distance Sensor SHARP 0A41SK [(Datasheet)](https://www.pololu.com/file/0J713/GP2Y0A41SK0F.pdf)
-
-
-
-This file contains the contents of the /home/pi/Swarm_Robots_USS2023/apriltag-master/python folder
-The Overlord is responsible for locating the robot in relation to the boundry box, communicating with the robot, and all computation
-The Overlord can tell the robot how fast and how for how long to drive straight, and can tell it to turn an angle
-It can also instruct the robot to drive along a circle, but this function is not currently functional
-There are several verisons of several of the programs, the python file with the largest version number is the most recent
+I use the rcpy.adc library to read data from the IR sensor. This library returns an integer representation of the voltage passed by the IR sensor. This sensor must be calibrated before obtaining a distance reading from the IR sensor
