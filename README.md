@@ -27,3 +27,6 @@ the function to estimate distance based on the integer reading from the IR senso
 where k1 = 62838.53689731416 and k2 = -1.3276711025926407
 
 ## IR Distance Sensor Hookup
+![image](https://github.com/vannescc/USS2023_Swarm_Robotics/assets/120139813/5e28eb07-f63b-4058-80f8-a7f3b17571e8)
+
+The IR Sensor is connected to the BBBlue on the robot via a breadboard located at the back of the robot. The wires that are plugged into ports on the beaglebone blue are wraped around 22 guage wires to have better contact with the breaboard. The sensor output is wired with a voltage divider of 20kohms.
