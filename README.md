@@ -25,3 +25,5 @@ the function to estimate distance based on the integer reading from the IR senso
 ![image](https://github.com/vannescc/USS2023_Swarm_Robotics/assets/120139813/96ad3f36-62e1-458a-a11f-1682bac367e0)
 
 where k1 = 62838.53689731416 and k2 = -1.3276711025926407
+
+## IR Distance Sensor Hookup
